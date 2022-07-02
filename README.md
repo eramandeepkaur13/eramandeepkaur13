@@ -1,7 +1,7 @@
 - 👋 Hi, I’m @eramandeepkaur13
-- 👀 I’m interested in cloud and Depops
+- 👀 I’m interested in cloud and Devops
 - 🌱 I’m currently learning AWS and Terraform
-- 💞️ I’m looking to collaborate on 
+- 💞️ I’m looking to collaborate on python,cloud and devops projects
 - 📫 How to reach me ...
 
 <!---
