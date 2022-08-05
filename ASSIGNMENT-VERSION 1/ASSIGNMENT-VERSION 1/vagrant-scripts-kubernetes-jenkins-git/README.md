@@ -1,10 +1,7 @@
 
 ## Single Vagrant File Creation of 3-node Ubuntu Cluster in any Host OS
-#### Suchintan Mishra [suchintan_mishra@epam.com]
-
+#### Amandeep Kaur
 #### Problem Statement:
-Project/Assignment - 5 Days		
-		
 DevOps Project/Assignment	Topics with Hands-on Lab	
 Activity - 5 Days	
     1. Three Tier web application using docker and Kubernetes 	
