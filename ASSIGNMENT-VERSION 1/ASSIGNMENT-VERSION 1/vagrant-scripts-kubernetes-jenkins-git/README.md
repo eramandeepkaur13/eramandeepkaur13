@@ -1,6 +1,5 @@
 
 ## Single Vagrant File Creation of 3-node Ubuntu Cluster in any Host OS
-#### Amandeep Kaur
 #### Problem Statement:
 DevOps Project/Assignment	Topics with Hands-on Lab	
 Activity - 5 Days	
