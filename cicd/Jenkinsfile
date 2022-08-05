@@ -1,0 +1,119 @@
+def COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
+
+pipeline {
+    agent { label 'master'}
+    tools {
+        maven 'maven-3.6.3'
+    }
+    parameters {
+        booleanParam(name: 'maven_build', defaultValue: true, description: 'Enable/Disable maven Build')
+        booleanParam(name: 'artifactory_build_publish', defaultValue: false, description: 'Enable/Disable Artifactory maven build and publish ')
+        booleanParam(name: 'sonarqube', defaultValue: false, description: 'Enable/Disable Sonarqube Analysis')
+        booleanParam(name: 'docker_build_push', defaultValue: true, description: 'Enable/Disable Docker build and push')
+        booleanParam(name: 'deploy', defaultValue: false, description: 'Enable/Disable Deploy')
+    }
+    stages {
+        stage ('Maven Build') {
+            when {
+                expression {
+                    return params.maven_build
+                }
+            }
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+        stage ('Artifactory configuration') {
+            when {
+                expression {
+                    return params.artifactory_build_publish
+                }
+            }
+            steps {
+                rtMavenDeployer (
+                    id: "MAVEN_DEPLOYER",
+                    serverId: "artifactory",
+                    releaseRepo: "libs-release-local",
+                    snapshotRepo: "libs-snapshot-local"
+                )
+
+                rtMavenResolver (
+                    id: "MAVEN_RESOLVER",
+                    serverId: "artifactory",
+                    releaseRepo: "libs-release",
+                    snapshotRepo: "libs-snapshot"
+                )
+            }
+        }
+        stage ('Exec Maven') {
+            when {
+                expression {
+                    return params.artifactory_build_publish
+                }
+            }
+            steps {
+                rtMavenRun (
+                    tool: 'maven',
+                    pom: 'pom.xml',
+                    goals: 'clean package',
+                    deployerId: "MAVEN_DEPLOYER",
+                    resolverId: "MAVEN_RESOLVER"
+                )
+            }
+        }
+        stage ('Publish build info') {
+            when {
+                expression {
+                    return params.artifactory_build_publish
+                }
+            }
+            steps {
+                rtPublishBuildInfo (
+                    serverId: "artifactory"
+                )
+            }
+        }
+        stage('SonarQube analysis') {
+            when {
+                expression {
+                    return params.sonarqube
+                }
+            }
+            environment {
+                scannerHome = tool 'sonarscanner'
+            }
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh "${scannerHome}/bin/sonar-scanner"
+                }
+            }
+        }
+        stage('Docker Build and Push') {
+            when {
+                expression {
+                    return params.docker_build_push
+                }
+            }
+            steps {
+                script {
+                    myapp = docker.build("vigneshsweekaran/easyclaim-backend:${env.BUILD_ID}")
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker_credential') {
+                        myapp.push("latest")
+                        myapp.push("${env.BUILD_ID}")
+                    }
+                }
+                sh "docker image prune -a -f"
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            when {
+                expression {
+                    return params.deploy
+                }
+            }
+            steps{
+                sh "ansible-playbook deploy-playbook.yml"
+            }
+        }
+    }
+}
